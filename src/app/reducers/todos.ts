@@ -35,9 +35,7 @@ export const todoReducer = handleActions<RootState.TodoState, TodoModel>(
         if (!todo || !action || !action.payload) {
           return todo;
         } else {
-          return (todo.id || 0) === action.payload.id
-            ? { ...todo, text: action.payload.text }
-            : todo;
+          return (todo.id || 0) === action.payload.id ? { ...todo, text: action.payload.text } : todo;
         }
       });
     },

@@ -3,15 +3,15 @@ import * as style from './style.css';
 import { connect } from 'react-redux';
 import { bindActionCreators, Dispatch } from 'redux';
 import { RouteComponentProps } from 'react-router';
+import { createSelector } from 'reselect';
 import { TodoActions } from 'app/actions';
 import { RootState } from 'app/reducers';
 import { TodoModel } from 'app/models';
 import { omit } from 'app/utils';
 import { Header, TodoList, Footer } from 'app/components';
+import { getFilter } from 'app/selectors';
+import { FooterContainer } from 'app/containers/App/FooterContainer';
 
-const FILTER_VALUES = (Object.keys(TodoModel.Filter) as (keyof typeof TodoModel.Filter)[]).map(
-  (key) => TodoModel.Filter[key]
-);
 
 const FILTER_FUNCTIONS: Record<TodoModel.Filter, (todo: TodoModel) => boolean> = {
   [TodoModel.Filter.SHOW_ALL]: () => true,
@@ -21,17 +21,26 @@ const FILTER_FUNCTIONS: Record<TodoModel.Filter, (todo: TodoModel) => boolean> =
 
 export namespace App {
   export interface Props extends RouteComponentProps<void> {
-    todos: RootState.TodoState;
-    actions: TodoActions;
     filter: TodoModel.Filter;
+    filteredTodos: TodoModel[],
+    activeCount: number;
+    completedCount: number;
+    actions: TodoActions;
   }
 }
 
+const getFilteredTodos = createSelector(
+  getFilter,
+  (state: RootState) => state.todos,
+  (filter, todos) => (filter ? todos.filter(FILTER_FUNCTIONS[filter]) : todos)
+);
+
 @connect(
-  (state: RootState): Pick<App.Props, 'todos' | 'filter'> => {
-    const hash = state.router.location && state.router.location.hash.replace('#', '');
-    const filter = FILTER_VALUES.find((value) => value === hash) || TodoModel.Filter.SHOW_ALL;
-    return { todos: state.todos, filter };
+  (state: RootState): Pick<App.Props, 'filter' | 'filteredTodos'> => {
+    return {
+      filter: getFilter(state),
+      filteredTodos: getFilteredTodos(state),
+    };
   },
   (dispatch: Dispatch): Pick<App.Props, 'actions'> => ({
     actions: bindActionCreators(omit(TodoActions, 'Type'), dispatch)
@@ -49,10 +58,7 @@ export class App extends React.Component<App.Props> {
   }
 
   handleClearCompleted(): void {
-    const hasCompletedTodo = this.props.todos.some((todo) => todo.completed || false);
-    if (hasCompletedTodo) {
       this.props.actions.clearCompleted();
-    }
   }
 
   handleFilterChange(filter: TodoModel.Filter): void {
@@ -60,20 +66,13 @@ export class App extends React.Component<App.Props> {
   }
 
   render() {
-    const { todos, actions, filter } = this.props;
-    const activeCount = todos.length - todos.filter((todo) => todo.completed).length;
-    const filteredTodos = filter ? todos.filter(FILTER_FUNCTIONS[filter]) : todos;
-    const completedCount = todos.reduce((count, todo) => (todo.completed ? count + 1 : count), 0);
+    const { actions, filteredTodos} = this.props;    
 
     return (
       <div className={style.normal}>
         <Header addTodo={actions.addTodo} />
         <TodoList todos={filteredTodos} actions={actions} />
-        <Footer
-          filter={filter}
-          activeCount={activeCount}
-          completedCount={completedCount}
-          onClickClearCompleted={this.handleClearCompleted}
+        <FooterContainer      
           onClickFilter={this.handleFilterChange}
         />
       </div>
