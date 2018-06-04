@@ -2,24 +2,29 @@ import * as React from 'react';
 import * as classNames from 'classnames';
 import * as style from './style.css';
 
-export namespace TodoTextInput {
-  export interface Props {
-    text?: string;
-    placeholder?: string;
-    newTodo?: boolean;
-    editing?: boolean;
-    onSave: (text: string) => void;
-  }
+const initialState = {
+  text: ''
+}
+export type State = Readonly<typeof initialState>;
 
-  export interface State {
-    text: string;
-  }
+const defaultProps = {
+  text: '',
+  placeholder: '',
+  newTodo: false,
+  editing: false
 }
 
-export class TodoTextInput extends React.Component<TodoTextInput.Props, TodoTextInput.State> {
-  constructor(props: TodoTextInput.Props, context?: any) {
+type DefaultProps = typeof defaultProps;
+export type Props = {
+  onSave: (text: string) => void;
+} & DefaultProps
+
+export class TodoTextInput extends React.Component<Props, State> {
+  state = initialState;
+
+  constructor(props: Props, context?: any) {
     super(props, context);
-    this.state = { text: this.props.text || '' };
+    this.state = { ...this.state, text: this.props.text || '' };
     this.handleBlur = this.handleBlur.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
